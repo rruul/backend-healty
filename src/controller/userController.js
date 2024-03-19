@@ -1,6 +1,5 @@
-const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const admin = require('./../config/firebase')
+const User = require('../models/users')
 
 const loginUser = async (req, res) => {
     try {
@@ -8,19 +7,14 @@ const loginUser = async (req, res) => {
 
         // Buscamos el usuario para verificar que existe el correo electronico
         //ahora con firebase-admin solo lo podemos poner asi
-        const userDoc = await admin.firestore().collection('users').doc(email).get()
-        
-        // Si no existe el usuario
-        if (!userDoc.exists) {
+        const userDoc = await User.findByEmail(email)
+        if (!userDoc) {
             return res.status(404).json({
                 message: 'User not found'
             })
         }
-
-        const userData = userDoc.data()
-
-        // Verificar si el password es correcto
-        const isValidPassword = await bcrypt.compare(password, userData.password)
+        // Verificar contrase;a
+        const isValidPassword = await userDoc.verifyPassword(password)
 
         if(!isValidPassword) {
             return res.status(401).json({
@@ -29,7 +23,7 @@ const loginUser = async (req, res) => {
         }
 
         // Genera el TOKEN
-        const token = jwt.sign({ email: userData.email}, process.env.SECRET, { expiresIn: '1h' })
+        const token = jwt.sign({ email: userDoc.email}, process.env.SECRET, { expiresIn: '1h' })
         res.status(200).json({ token })
     } catch (error) {
         res.status(500).json({
@@ -41,12 +35,24 @@ const loginUser = async (req, res) => {
 const registerUser = async (req, res) => {
     try {
         const { email, password } = req.body
-
+        const existingUser = await User.findByEmail(email)
+        if (existingUser) {
+            return res.status(400).json({
+                message: 'User already exists'
+            })
+        }
+        const newUser = await User.createUser(email, password)
+        res.status(201).json({
+            message: 'User registered successfully',
+            user: newUser
+        })
+        
+        // Encriptar la contrase;a
         const hashed = await bcrypt.hash(password, 10)
 
         //Guardar en la DB
         await admin.firestore().collection('users').doc(email).set({
-            email,
+            email: email,
             password: hashed
         })
         res.status(201).json({

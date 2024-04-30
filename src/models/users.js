@@ -20,7 +20,6 @@ class User extends IUser {
             return new User(email, password)
         } catch (error) {
             console.log('Error: ', error)
-            throw new Error('Error creating user')
         }
     }
     async verifyPassword (password) {
@@ -37,7 +36,41 @@ class User extends IUser {
             return null
         } catch (error) {
             console.log('Error: ', error)
-            throw new Error('Error finding user')
+            throw error
+        }
+    }
+
+    static async getAllUsers () {
+        try {
+            const users = await firestore.collection('users').get()
+            const foundUsers = []
+            users.forEach(doc => {
+                foundUsers.push({
+                    email: doc.email,
+                    ...doc.data()
+                })
+            })
+            return foundUsers
+        } catch (error) {
+            throw error
+        }
+    }
+
+    static async deleteUser (userEmail) {
+        try {
+            await firestore.collection('users').doc(userEmail).delete()
+        } catch (error) {
+            throw error
+        }
+    }
+
+    static async updateUser (userEmail, userData) {
+        try {
+            await firestore.collection('users').doc(userEmail).update(userData)
+            const userUpdated = await firestore.collection('users').doc(userEmail).get()
+            return {userUpdated: userUpdated.data()}
+        } catch (error) {
+            throw error
         }
     }
 }

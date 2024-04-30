@@ -68,4 +68,46 @@ const registerUser = async (req, res) => {
     }
 }
 
-module.exports = { registerUser, loginUser }
+const getAllUsers = async (req, res) => {
+    try{
+        const users = await User.getAllUsers()
+        res.json({
+            users,
+            message: 'success'
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: 'Internal Server Error'
+        })
+    }
+}
+
+const deleteUser = async (req, res) => {
+    const uderId = req.params.id
+    try{
+        await User.deleteUser(userEmail)
+        res.status(204).send()
+    } catch (error) {
+        res.status(500).json({
+            message: 'Internal Server Error'
+        })
+    }
+}
+
+const updateUser = async (req, res) => {
+    const userEmail = req.params.email
+    const userData = req.body
+    try{
+        const userUpdate = await User.updateUser(userEmail, userData)
+        res.json({
+            userUpdate,
+            message: 'success'
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: 'Internal Server Error'
+        })
+    }
+}
+
+module.exports = { registerUser, loginUser, getAllUsers, deleteUser, updateUser }

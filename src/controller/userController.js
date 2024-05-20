@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken')
-const User = require('../models/users')
+const User = require('../models/User')
+const admin = require('firebase-admin')
+const bcrypt = require('bcrypt')
 
 const loginUser = async (req, res) => {
     try {
@@ -37,14 +39,14 @@ const loginUser = async (req, res) => {
 
 const registerUser = async (req, res) => {
     try {
-        const { email, password } = req.body
+        const { email, password, nombre, apaterno, amaterno, direccion, telefono } = req.body
         const existingUser = await User.findByEmail(email)
         if (existingUser) {
             return res.status(400).json({
                 message: 'User already exists'
             })
         }
-        const newUser = await User.createUser(email, password)
+        const newUser = await User.createUser(email, password, nombre, apaterno, amaterno, direccion, telefono)
         res.status(201).json({
             message: 'User registered successfully',
             user: newUser
@@ -56,12 +58,15 @@ const registerUser = async (req, res) => {
         //Guardar en la DB
         await admin.firestore().collection('users').doc(email).set({
             email: email,
-            password: hashed
-        })
-        res.status(201).json({
-            message: 'User registered successfully'
+            password: hashed,
+            nombre: nombre,
+            apaterno: apaterno,
+            amaterno: amaterno,
+            direccion: direccion,
+            telefono: telefono
         })
     } catch (error) {
+        console.log('Error: ', error)
         res.status(500).json({
             message: 'InternaL Server Error'
         })
@@ -83,10 +88,11 @@ const getAllUsers = async (req, res) => {
 }
 
 const deleteUser = async (req, res) => {
-    const uderId = req.params.id
+    const userEmail = req.params.email
     try{
         await User.deleteUser(userEmail)
         res.status(204).send()
+        message: 'success'
     } catch (error) {
         res.status(500).json({
             message: 'Internal Server Error'

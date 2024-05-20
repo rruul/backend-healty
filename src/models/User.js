@@ -4,20 +4,30 @@ const IUser = require('../interfaces/IUser')
 const firestore = admin.firestore()
 
 class User extends IUser {
-    constructor (email, password) {
+    constructor (email, password, nombre, apaterno, amaterno, direccion, telefono) {
         super()
         this.email = email
         this.password = password
+        this.nombre = nombre
+        this.apaterno = apaterno
+        this.amaterno = amaterno
+        this.direccion = direccion
+        this.telefono = telefono
     }
-    static async createUser (email, password) {
+    static async createUser (email, password, nombre, apaterno, amaterno, direccion, telefono) {
         try {
             const hash = await bcrypt.hash(password, 10)
             const user = firestore.collection('users').doc(email)
             await user.set({
                 email,
-                password: hash
+                password: hash,
+                nombre,
+                apaterno,
+                amaterno,
+                direccion,
+                telefono
             })
-            return new User(email, password)
+            return new User(email, password, nombre, apaterno, amaterno, direccion, telefono)
         } catch (error) {
             console.log('Error: ', error)
         }
@@ -36,7 +46,6 @@ class User extends IUser {
             return null
         } catch (error) {
             console.log('Error: ', error)
-            throw error
         }
     }
 
@@ -52,15 +61,16 @@ class User extends IUser {
             })
             return foundUsers
         } catch (error) {
-            throw error
+            message: 'Internal Server Error'
         }
     }
 
     static async deleteUser (userEmail) {
         try {
             await firestore.collection('users').doc(userEmail).delete()
+            message: 'success'
         } catch (error) {
-            throw error
+            message: 'Internal Server Error'
         }
     }
 
@@ -70,7 +80,7 @@ class User extends IUser {
             const userUpdated = await firestore.collection('users').doc(userEmail).get()
             return {userUpdated: userUpdated.data()}
         } catch (error) {
-            throw error
+            message: 'Internal Server Error'
         }
     }
 }
